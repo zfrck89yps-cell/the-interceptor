@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>The Interceptor</title>
+<style>
+  .homeHeader.emoji{
+    font-size: 44px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  :root{
+    --bg1:#FFB703;
+    --bg2:#FFD166;
+    --bg3:#FFF3D6;
+
+    --ink:#1f2328;
+    --muted:#5d6672;
+
+    --card:#ffffffcc;
+    --stroke:rgba(0,0,0,.10);
+    --shadow:0 10px 30px rgba(0,0,0,.12);
+
+    --green:#2BD576;
+    --amber:#FFB020;
+    --red:#FF4D4D;
+
+    --primary:#F77F00;
+    --primaryDark:#D96D00;
+
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    color:var(--ink);
+    background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 40%, var(--bg3) 100%);
+  }
+
+  .topbar{
+    position:fixed; left:0; right:0; top:0;
+    height:56px;
+    display:flex; align-items:center; justify-content:center;
+    background: rgba(255,255,255,.35);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    z-index: 9999;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  }
+  .topbar .title{
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: .4px;
+    color: #D96D00;
+    font-family: "Avenir Next","SF Pro Rounded", system-ui, sans-serif;
+  }
+
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding: 18px 16px;
+    padding-top: calc(18px + 56px);
+    padding-bottom: 120px;
+  }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--stroke);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .home{
+    text-align:center;
+    padding: 18px 14px 16px;
+  }
+
+  .homeHeader{
+    font-size: 22px;
+    font-weight: 950;
+    margin: 8px 0 10px;
+    letter-spacing: .2px;
+  }
+
+  .subtitle{
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 14px;
+    line-height: 1.35;
+  }
+
+  .btnRow{ display:flex; gap:10px; flex-wrap:wrap; }
+  .btn{
+    flex: 1 1 200px;
+    border: 1px solid rgba(0,0,0,.10);
+    border-radius: 16px;
+    padding: 14px 14px;
+    font-weight: 900;
+    cursor: pointer;
+    touch-action: manipulation;
+    background: rgba(255,255,255,.65);
+  }
+  .btnPrimary{
+    background: linear-gradient(180deg, var(--primary), var(--primaryDark));
+    color: #fff;
+    box-shadow: 0 12px 22px rgba(247,127,0,.25);
+  }
+  .btnSecondary{ background: rgba(255,255,255,.65); color: var(--ink); }
+  .btnGhost{ background: rgba(255,255,255,.35); color: var(--ink); }
+
+  label{ display:block; font-size:12px; color: var(--muted); margin:10px 0 6px; font-weight: 800; }
+  textarea,input,select{
+    width:100%;
+    box-sizing:border-box;
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.75);
+    color: var(--ink);
+    border-radius: 16px;
+    padding: 12px;
+    font-size: 15px;
+    outline:none;
+  }
+  textarea{ min-height: 82px; resize: vertical; }
+
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .row > *{ flex:1 1 160px; }
+
+  .seg{ display:flex; gap:8px; flex-wrap:wrap; }
+  .seg button{
+    flex:1;
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.65);
+    color: var(--ink);
+    padding: 12px 10px;
+    border-radius: 14px;
+    font-weight: 900;
+    cursor:pointer;
+    touch-action: manipulation;
+  }
+  .seg button.active{ background: rgba(0,0,0,.08); }
+
+  .prob{ display:flex; gap:8px; }
+  .prob button{
+    flex:1;
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.65);
+    padding: 12px 0;
+    border-radius: 14px;
+    font-weight: 950;
+    cursor:pointer;
+    touch-action: manipulation;
+  }
+  .prob button.active{ background: rgba(0,0,0,.10); }
+
+  .hint{ font-size:12px; color: var(--muted); margin-top: 8px; line-height:1.35; }
+
+  .verdict{
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,.10);
+    background: rgba(255,255,255,.70);
+  }
+  .verdictTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    font-weight: 950;
+  }
+  .dot{ width:12px;height:12px;border-radius:999px; display:inline-block; margin-right:10px; vertical-align:middle; }
+  .bar{ font-family: ui-monospace, Menlo, Monaco, monospace; font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+  .headline{ margin: 10px 0 6px; font-weight: 950; }
+  .advice{ margin: 0; color: var(--ink); line-height: 1.35; font-size: 14px; }
+
+  .listRow{
+    border-top: 1px solid rgba(0,0,0,.10);
+    padding: 12px 0;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .listRow:first-child{ border-top:0; padding-top:0; }
+  .listTitle{ font-weight: 950; }
+  .listMeta{ font-size:12px; color: var(--muted); margin-top: 4px; }
+
+  .smallBtn{
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.65);
+    color: var(--ink);
+    padding: 10px 10px;
+    border-radius: 14px;
+    font-weight: 950;
+    cursor:pointer;
+    white-space:nowrap;
+    touch-action: manipulation;
+  }
+  .smallBtn.danger{
+    border-color: rgba(255,77,77,.28);
+    background: rgba(255,77,77,.10);
+  }
+
+  .nav{
+    position:fixed; left:0; right:0; bottom:0;
+    padding: 10px 12px;
+    background: rgba(255,255,255,.35);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(0,0,0,.08);
+    z-index: 9998;
+  }
+  .navInner{ max-width:760px; margin:0 auto; display:flex; gap:10px; flex-wrap:wrap; }
+  .navBtn{
+    flex:1 1 140px;
+    border: 1px solid rgba(0,0,0,.12);
+    background: rgba(255,255,255,.65);
+    color: var(--ink);
+    border-radius: 16px;
+    padding: 14px 12px;
+    font-weight: 950;
+    cursor:pointer;
+    touch-action: manipulation;
+  }
+  .navBtn.active{ background: rgba(0,0,0,.10); }
+
+  .exportBox{
+    width:100%;
+    min-height:200px;
+    font-family: ui-monospace, Menlo, Monaco, monospace;
+    font-size:12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="title">The Interceptor</div></div>
+
+<div class="wrap">
+
+  <!-- HOME -->
+  <div id="screenHome" class="card home">
+    <div class="homeHeader emoji">🧠🚓</div>
+    <div class="homeHeader">Intercept the what if</div>
+    <p class="subtitle">Catch the “what if” before it drives the whole day. You’re in the front seat.</p>
+    <div class="btnRow">
+      <button class="btn btnPrimary" type="button" onclick="go('new')">What if</button>
+      <button class="btn btnSecondary" type="button" onclick="go('saved')">What were they?</button>
+    </div>
+  </div>
+
+  <!-- NEW -->
+  <div id="screenNew" style="display:none">
+    <div class="card">
+      <label>What if…</label>
+      <textarea id="whatIf" placeholder="What if…"></textarea>
+
+      <label>Likelihood</label>
+      <div class="prob" id="probRow"></div>
+      <div class="hint">1–2 = unlikely · 3 = maybe · 4–5 = likely</div>
+
+      <div class="row">
+        <div>
+          <label>Reality check</label>
+          <div class="seg" id="realitySeg"></div>
+        </div>
+        <div>
+          <label>Timeframe</label>
+          <div class="seg" id="timeSeg"></div>
+        </div>
+      </div>
+
+      <label>Can I influence this in any meaningful way?</label>
+      <div class="seg" id="controlSeg"></div>
+
+      <label>Root pattern (optional)</label>
+      <select id="root">
+        <option value="">Skip</option>
+        <option>Overwhelm / too much input</option>
+        <option>Impostor syndrome</option>
+        <option>Perfectionism</option>
+        <option>People pleasing</option>
+        <option>Fear of conflict</option>
+        <option>Rejection sensitivity</option>
+        <option>Catastrophising spiral</option>
+        <option>Control / uncertainty</option>
+        <option>Sleep deprived / overstimulated</option>
+        <option>Other</option>
+      </select>
+      <div id="rootOtherWrap" style="display:none">
+        <label>Other (one sentence)</label>
+        <input id="rootOther" placeholder="e.g. I feel judged at work" />
+      </div>
+
+      <div class="verdict" id="verdictBlock" style="display:none">
+        <div class="verdictTop">
+          <div id="meterTitle"><span class="dot" id="dot"></span>🟢 GREEN</div>
+          <div class="bar" id="meterBar">[□□□□□] 0/5</div>
+        </div>
+        <div class="headline" id="headline">—</div>
+        <p class="advice" id="adviceText">—</p>
+      </div>
+
+      <label id="p1Label">—</label>
+      <textarea id="box1" placeholder=""></textarea>
+
+      <label id="p2Label">—</label>
+      <textarea id="box2" placeholder=""></textarea>
+
+      <div class="btnRow" style="margin-top:12px">
+        <button class="btn btnPrimary" type="button" onclick="saveEntry()">Save</button>
+        <button class="btn btnGhost" type="button" onclick="resetForm()">Reset</button>
+        <button class="btn btnSecondary" type="button" onclick="go('home')">Home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVED -->
+  <div id="screenSaved" style="display:none">
+    <div class="card">
+      <div class="hint" style="margin-top:0">Tap a thought. Delete the ones you’re done with.</div>
+      <div id="savedList" style="margin-top:10px"></div>
+
+      <div class="btnRow" style="margin-top:12px">
+        <button class="btn btnSecondary" type="button" onclick="openExport()">Export / Copy</button>
+        <button class="btn btnSecondary" type="button" onclick="go('home')">Home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT -->
+  <div id="screenExport" style="display:none">
+    <div class="card">
+      <div class="homeHeader" style="margin-top:0">Export</div>
+      <p class="subtitle">Copy this into a Google Doc, Notes, or anywhere else.</p>
+      <textarea id="exportText" class="exportBox" readonly></textarea>
+
+      <div class="btnRow" style="margin-top:12px">
+        <button class="btn btnPrimary" type="button" onclick="copyExport()">Copy to clipboard</button>
+        <button class="btn btnSecondary" type="button" onclick="go('saved')">Back</button>
+      </div>
+      <div class="hint" id="copyHint"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="nav" id="bottomNav" style="display:none">
+  <div class="navInner">
+    <button class="navBtn" id="navHome" type="button" onclick="go('home')">Home</button>
+    <button class="navBtn" id="navNew" type="button" onclick="go('new')">What if</button>
+    <button class="navBtn" id="navSaved" type="button" onclick="go('saved')">What were they?</button>
+  </div>
+</div>
+
+<script>
+  const KEY = "interceptor_android_v1";
+  if (!localStorage.getItem(KEY)) localStorage.setItem(KEY, JSON.stringify([]));
+
+  const state = { lik: 3, reality: "Imagined", timeframe: "Future", control: "A bit" };
+
+  function $(id){ return document.getElementById(id); }
+  function getEntries(){ return JSON.parse(localStorage.getItem(KEY) || "[]"); }
+  function setEntries(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  }
+
+  function scoreLikelihood(l){ return (l<=2)?0:(l===3?1:2); }
+  function scoreReality(r){ return (r==="Imagined")?0:1; }
+  function scoreTime(t){ return (t==="Now")?2:(t==="Soon")?1:0; }
+
+  function baseTotal(){
+    return scoreLikelihood(state.lik) + scoreReality(state.reality) + scoreTime(state.timeframe);
+  }
+  function baseColour(total){
+    if (total <= 1) return "GREEN";
+    if (total <= 3) return "AMBER";
+    return "RED";
+  }
+  function applyOverride(colour){
+    if (state.reality==="Reality" && state.lik<=2 && state.timeframe==="Future") return "GREEN";
+    if (state.reality==="Imagined" && colour==="RED") return "AMBER";
+    return colour;
+  }
+  function isActionable(){ return (state.control==="Yes" || state.control==="A bit"); }
+  function solutionType(colour){
+    const actionable = isActionable();
+    if (colour==="GREEN") return "DISMISS";
+    if (colour==="AMBER" && actionable) return "DOWNGRADE_LIGHT_ACTION";
+    if (colour==="AMBER" && !actionable) return "CONTAIN";
+    if (colour==="RED" && actionable) return "PLAN";
+    return "PROTECT";
+  }
+
+  function bar(total,max){ return "[" + "■".repeat(total) + "□".repeat(max-total) + "] " + total + "/" + max; }
+  function dotColour(c){ return c==="GREEN" ? "var(--green)" : c==="AMBER" ? "var(--amber)" : "var(--red)"; }
+
+  function advicePack(colour){
+    const type = solutionType(colour);
+
+    if (type==="DISMISS"){
+      return {
+        type,
+        headline: "This is brain noise, not a problem.",
+        advice: [
+          "This is unlikely, imagined, or too far away to deserve your energy.",
+          "Thinking about it more won’t help.",
+          "You’re allowed to drop this on purpose."
+        ],
+        p1: "Why can I safely ignore this?",
+        p2: "If my brain won’t let go, what’s one tiny action that would reassure me — then stop?"
+      };
+    }
+    if (type==="DOWNGRADE_LIGHT_ACTION"){
+      return {
+        type,
+        headline: "This might matter — but not at the size you’re giving it.",
+        advice: [
+          "Stress is inflating this.",
+          "Shrink it back to its actual shape.",
+          "One small, sensible action is enough."
+        ],
+        p1: "What’s the downgraded version of this what-if?",
+        p2: "What’s the smallest useful action I could take?"
+      };
+    }
+    if (type==="CONTAIN"){
+      return {
+        type,
+        headline: "You can’t fix this right now — but you can stop rehearsing it.",
+        advice: [
+          "Worrying early doesn’t make it easier later.",
+          "This doesn’t need solving today.",
+          "Contain it and get on with your day."
+        ],
+        p1: "What part of this can wait?",
+        p2: "How can I stop this taking over today?"
+      };
+    }
+    if (type==="PLAN"){
+      return {
+        type,
+        headline: "This deserves action — not panic.",
+        advice: [
+          "Stick to facts only.",
+          "Make a realistic plan.",
+          "Action beats anxiety every time."
+        ],
+        p1: "What are the actual facts (no assumptions)?",
+        p2: "What’s the first sensible step I can take?"
+      };
+    }
+    return {
+      type,
+      headline: "You can’t stop this — but you can protect yourself.",
+      advice: [
+        "Trying to control the uncontrollable will only exhaust you.",
+        "Your job here is coping, not fixing.",
+        "Reduce suffering where you can."
+      ],
+      p1: "What support or coping would I need if this happens?",
+      p2: "How do I look after my mental health around this?"
+    };
+  }
+
+  function buildProb(){
+    const row = $("probRow");
+    row.innerHTML = "";
+    [1,2,3,4,5].forEach(n=>{
+      const b = document.createElement("button");
+      b.textContent = String(n);
+      if (state.lik===n) b.classList.add("active");
+      b.type="button";
+      b.onclick=()=>{ state.lik=n; buildAll(); updateUI(); };
+      row.appendChild(b);
+    });
+  }
+  function buildSeg(id, values, key){
+    const row = $(id);
+    row.innerHTML="";
+    values.forEach(v=>{
+      const b = document.createElement("button");
+      b.textContent=v;
+      if (state[key]===v) b.classList.add("active");
+      b.type="button";
+      b.onclick=()=>{ state[key]=v; buildAll(); updateUI(); };
+      row.appendChild(b);
+    });
+  }
+  function buildAll(){
+    buildProb();
+    buildSeg("realitySeg", ["Reality","Imagined"], "reality");
+    buildSeg("timeSeg", ["Now","Soon","Future"], "timeframe");
+    buildSeg("controlSeg", ["Yes","A bit","No"], "control");
+  }
+
+  function ready(){ return $("whatIf").value.trim().length > 0; }
+
+  function updateUI(){
+    const root = $("root").value;
+    $("rootOtherWrap").style.display = (root==="Other") ? "block" : "none";
+
+    if (!ready()){
+      $("verdictBlock").style.display = "none";
+      $("p1Label").textContent = "—";
+      $("p2Label").textContent = "—";
+      return;
+    }
+
+    const total = baseTotal();
+    let colour = baseColour(total);
+    colour = applyOverride(colour);
+    const pack = advicePack(colour);
+
+    $("verdictBlock").style.display = "block";
+    $("meterTitle").innerHTML =
+      '<span class="dot" id="dot"></span>' +
+      (colour==="GREEN" ? "🟢 GREEN" : (colour==="AMBER" ? "🟠 AMBER" : "🔴 RED"));
+    $("meterBar").textContent = bar(total, 5);
+    $("dot").style.background = dotColour(colour);
+
+    $("headline").textContent = pack.headline;
+    $("adviceText").textContent = pack.advice.join(" ");
+    $("p1Label").textContent = pack.p1;
+    $("p2Label").textContent = pack.p2;
+  }
+
+  function renderSaved(){
+    const list = $("savedList");
+    const entries = getEntries().slice().sort((a,b)=>b.createdAt-a.createdAt);
+
+    if(!entries.length){
+      list.innerHTML = "<div class='hint'>Nothing saved yet. Your brain has been suspiciously quiet.</div>";
+      return;
+    }
+
+    list.innerHTML = entries.map(e=>{
+      const dot = e.colour==="GREEN" ? "🟢" : (e.colour==="AMBER" ? "🟠" : "🔴");
+      const meta = dot + " " + e.colour + " · " + e.meter.total + "/5 · " + new Date(e.createdAt).toLocaleString();
+      return `
+        <div class="listRow">
+          <div>
+            <div class="listTitle">${escapeHtml(e.whatIf)}</div>
+            <div class="listMeta">${escapeHtml(meta)}</div>
+          </div>
+          <button class="smallBtn danger" type="button" onclick="delEntry('${e.id}')">Delete</button>
+        </div>`;
+    }).join("");
+  }
+
+  function delEntry(id){
+    setEntries(getEntries().filter(e=>e.id!==id));
+    renderSaved();
+  }
+
+  function saveEntry(){
+    const whatIf = $("whatIf").value.trim();
+    if(!whatIf){ alert("Type the what-if first."); return; }
+
+    const total = baseTotal();
+    let colour = baseColour(total);
+    colour = applyOverride(colour);
+    const pack = advicePack(colour);
+
+    const rootSel = $("root").value;
+    const rootBrief = (rootSel==="Other")
+      ? ($("rootOther").value.trim() || "Other")
+      : (rootSel || "");
+
+    const entry = {
+      id: Date.now().toString(36) + "_" + Math.random().toString(16).slice(2),
+      createdAt: Date.now(),
+      whatIf,
+      lik: state.lik,
+      reality: state.reality,
+      timeframe: state.timeframe,
+      control: state.control,
+      colour,
+      meter: { total, max: 5 },
+      solutionType: pack.type,
+      headline: pack.headline,
+      advice: pack.advice,
+      rootBrief,
+      prompt1Label: pack.p1,
+      prompt2Label: pack.p2,
+      box1: $("box1").value.trim(),
+      box2: $("box2").value.trim()
+    };
+
+    const entries = getEntries();
+    entries.push(entry);
+    setEntries(entries);
+
+    $("whatIf").value = "";
+    $("box1").value = "";
+    $("box2").value = "";
+    $("root").value = "";
+    $("rootOther").value = "";
+
+    updateUI();
+    renderSaved();
+    go("saved");
+  }
+
+  function resetForm(){
+    $("whatIf").value = "";
+    $("box1").value = "";
+    $("box2").value = "";
+    $("root").value = "";
+    $("rootOther").value = "";
+    state.lik = 3;
+    state.reality = "Imagined";
+    state.timeframe = "Future";
+    state.control = "A bit";
+    buildAll();
+    updateUI();
+  }
+
+  function setNavActive(which){
+    $("navHome").classList.toggle("active", which==="home");
+    $("navNew").classList.toggle("active", which==="new");
+    $("navSaved").classList.toggle("active", which==="saved");
+  }
+
+  function go(which){
+    $("screenHome").style.display = (which==="home") ? "block" : "none";
+    $("screenNew").style.display = (which==="new") ? "block" : "none";
+    $("screenSaved").style.display = (which==="saved") ? "block" : "none";
+    $("screenExport").style.display = (which==="export") ? "block" : "none";
+
+    $("bottomNav").style.display = (which==="home") ? "none" : "block";
+    setNavActive(which);
+
+    if (which==="saved") renderSaved();
+    if (which==="new") updateUI();
+  }
+
+  function openExport(){
+    const entries = getEntries().slice().sort((a,b)=>a.createdAt-b.createdAt);
+    const lines = [];
+    for (const e of entries){
+      lines.push("------------------------------------------------------------");
+      lines.push(new Date(e.createdAt).toLocaleString());
+      lines.push(`${e.colour}   Risk: ${e.meter.total}/5   Type: ${e.solutionType}`);
+      lines.push("");
+      lines.push("WHAT IF: " + e.whatIf);
+      lines.push("LIKELIHOOD (1–5): " + e.lik);
+      lines.push("REALITY CHECK: " + e.reality);
+      lines.push("TIMEFRAME: " + e.timeframe);
+      lines.push("CONTROL: " + e.control);
+      if (e.rootBrief) lines.push("ROOT PATTERN: " + e.rootBrief);
+      lines.push("");
+      lines.push("HEADLINE: " + e.headline);
+      lines.push("ADVICE: " + (Array.isArray(e.advice) ? e.advice.join(" ") : (e.advice || "")));
+      lines.push("");
+      lines.push(e.prompt1Label);
+      lines.push(e.box1 || "—");
+      lines.push("");
+      lines.push(e.prompt2Label);
+      lines.push(e.box2 || "—");
+      lines.push("");
+    }
+    $("exportText").value = lines.join("\n");
+    $("copyHint").textContent = "";
+    go("export");
+  }
+
+  async function copyExport(){
+    try{
+      await navigator.clipboard.writeText($("exportText").value);
+      $("copyHint").textContent = "Copied. Now paste it into Google Docs.";
+    } catch(e){
+      $("copyHint").textContent = "Couldn’t auto-copy. Long-press the text and copy it manually.";
+    }
+  }
+
+  // Init
+  buildAll();
+  updateUI();
+  renderSaved();
+
+  $("whatIf").addEventListener("input", updateUI);
+  $("root").addEventListener("change", updateUI);
+</script>
+
+</body>
+</html>
