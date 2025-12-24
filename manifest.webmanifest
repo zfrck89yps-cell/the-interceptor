@@ -1,0 +1,15 @@
+{
+  "name": "The Interceptor",
+  "short_name": "Interceptor",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FFD166",
+  "theme_color": "#F77F00",
+  "icons": [
+    {
+      "src": "4D3B7BD3-5798-416A-920D-87C2E034CDDE.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
